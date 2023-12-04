@@ -1,21 +1,25 @@
 #include <iostream>
 #include "MacUILib.h"
-#include "objPos.h" // fundamental building block for project
+#include "objPos.h"
+#include "GameMechs.h"  
+#include "Player.h" 
+#include "Food.h" 
 #include "objPosArrayList.h"
-#include "GameMechs.h"
-#include "Player.h"
 
 
 using namespace std;
 
 #define DELAY_CONST 100000
 
-GameMechs* myGM;
-Player* myPlayer;
 
-objPos myPos;
+// Global variables to be removed
+GameMechs* GMPtr;
+Player* PlayerPtr;
+Food* FoodPtr;
 
-bool exitFlag;
+// const int width = 30;
+// const int height = 15;
+// bool exitFlag;
 
 void Initialize(void);
 void GetInput(void);
@@ -28,10 +32,9 @@ void CleanUp(void);
 
 int main(void)
 {
-
     Initialize();
 
-    while(myGM->getExitFlagStatus() == false)  
+    while(!GMPtr->getExitFlagStatus())  
     {
         GetInput();
         RunLogic();
@@ -43,105 +46,102 @@ int main(void)
 
 }
 
-
+// Initialize the game
 void Initialize(void)
 {
     MacUILib_init();
     MacUILib_clearScreen();
 
-    myGM = new GameMechs(30, 15); // make the board size 30x15
-    myPlayer = new Player(myGM);
+    GMPtr = new GameMechs(30, 15); // make the size of the board 30x15
+    FoodPtr = new Food();
 
-    objPos tempPos;
-    myGM->generateFood(tempPos);
+    objPos playerPos;
+    PlayerPtr = new Player(GMPtr, FoodPtr);
+    FoodPtr->generateFood(GMPtr, PlayerPtr->getPlayerPos());
 
+    //exitflag = false
 }
 
+// Get user input
 void GetInput(void)
 {
-    myGM->getInput();
+    GMPtr->getInput();
 }
 
+// Run game logic
 void RunLogic(void)
 {
-    myPlayer->updatePlayerDir();
-    myPlayer->movePlayer();
-
-    myGM->clearInput(); // so to not repeatedly process the input
+    PlayerPtr->updatePlayerDir(); 
+    PlayerPtr->movePlayer();
+    GMPtr->clearInput();
 }
 
+// Draw the game screen
 void DrawScreen(void)
 {
-    MacUILib_clearScreen();    
-
-    bool drawn = false; // boolean flag
-
-    objPosArrayList* playerBody = myPlayer->getPlayerPos();
+    MacUILib_clearScreen();   
+    bool drawn; 
+    objPos map(0, 0, '#');
+    objPosArrayList* playerBody = PlayerPtr->getPlayerPos();
     objPos tempBody;
+    objPos playerPos;
+    objPos FoodPos;
 
-    objPos tempFoodPos;
-    myGM->getFoodPos(tempFoodPos);
-
-
-    for(int i = 0; i < myGM->getBoardSizeY(); i++)
-    {
-        for(int j = 0; i < myGM->getBoardSizeX(); j++)
-        {
+    // Draw borders
+    for (int i = 0; i < GMPtr->getBoardSizeY(); i++) {
+        for (int j = 0; j < GMPtr->getBoardSizeX(); j++) {
             drawn = false;
-            
-            // iterate through every element in the list
-            for(int k = 0; k < playerBody->getSize(); k++)
-            {
+            for (int k=0; k< playerBody->getSize(); k++){
                 playerBody->getElement(tempBody, k);
-                if(tempBody.x == j && tempBody.y == i)
-                {
-                    MacUILib_printf("%c", tempBody.symbol);
-                    drawn =  true;
+                if(tempBody.x == j && tempBody.y == i){
+                    map.setObjPos(i, j, tempBody.symbol);
+                    drawn = true;
                     break;
                 }
             }
-            
-            if(drawn) continue;
-            // if player body was already drawn, dont draw anything below
-
-            // draw border
-            if(i == 0 || i == myGM->getBoardSizeY() - 1 || j == 0 || myGM->getBoardSizeX() - 1)
-            {
-                MacUILib_printf("%c", '#');
+            if(!drawn){
+                if (i == 0 || i == GMPtr->getBoardSizeY() - 1 || j == 0 || j == GMPtr->getBoardSizeX() - 1) {
+                map.setObjPos(i, j, '#');
+                }
+                else {
+                        FoodPtr->getFoodPos(FoodPos);
+                        if (i == FoodPos.y && j == FoodPos.x) {
+                            map.setObjPos(i, j, 'o');
+                        }
+                        else {
+                            map.setObjPos(i, j, ' ');
+                        }
+                }
             }
-            
-            else if(j == tempFoodPos.x && i == tempFoodPos.y)
-            {
-                MacUILib_printf("%c", tempFoodPos.symbol);
-            }
-            else
-            {
-                MacUILib_printf("%c", ' ');
-            }
+            map.getObjPos(map);
+            MacUILib_printf("%c", map.getSymbol());
         }
-
         MacUILib_printf("\n");
     }
+    
+    FoodPtr->getFoodPos(FoodPos);
 
-    MacUILib_printf("Score: %d\n", myGM->getScore());
-
-    MacUILib_printf("Food Pos: <%d, %d>\n", tempFoodPos.x, tempFoodPos.y); 
+    MacUILib_printf("Food: Symbol = %c, X = %d, Y = %d\n", 
+                    FoodPos.symbol, FoodPos.x, FoodPos.y); // shows the food symbol and x,y coordinate
+    MacUILib_printf("\nScore: %d", playerBody->getSize() - 1); // shows the score of the player by finding the size of the list - 1
 
 }
 
+// Introduce a delay between game loops
 void LoopDelay(void)
 {
-    MacUILib_Delay(DELAY_CONST); // 0.1 second delay
+    MacUILib_Delay(DELAY_CONST); // 0.1s delay
 }
 
 
+// Clean up resources and exit the game
 void CleanUp(void)
 {
-    MacUILib_clearScreen();    
-  
+    MacUILib_clearScreen(); 
     MacUILib_uninit();
+   
+    delete GMPtr;
+    delete PlayerPtr;
+    delete FoodPtr;
 
-    // remove heap instances
-    delete myGM;
-    delete myPlayer;
 }

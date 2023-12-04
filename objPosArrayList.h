@@ -1,14 +1,14 @@
 #ifndef OBJPOS_ARRAYLIST_H
 #define OBJPOS_ARRAYLIST_H
 
-#define ARRAY_MAX_CAP 256
+#define ARRAY_MAX_CAP 200
 
 #include "objPos.h"
 
 class objPosArrayList
 {
     private:
-        objPos* List;
+        objPos* list;
         int listSize;
         int arrayCapacity;
 

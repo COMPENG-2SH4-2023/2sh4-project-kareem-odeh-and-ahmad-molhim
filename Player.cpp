@@ -1,22 +1,19 @@
 #include "Player.h"
 
-
-
-
-Player::Player(GameMechs* thisGMRef)
-{
+Player::Player(GameMechs* thisGMRef, Food* foodPtr)
+{ 
     mainGameMechsRef = thisGMRef;
     myDir = STOP;
+    objPos tempPos;
+    tempPos.setObjPos(mainGameMechsRef->getBoardSizeX()/2,
+                    mainGameMechsRef->getBoardSizeY()/2,
+                    '*');
 
     // more actions to be included
-    objPos tempPos;
-    tempPos.setObjPos(mainGameMechsRef->getBoardSizeX() / 2,
-                       mainGameMechsRef->getBoardSizeY() / 2,
-                        '@');
-
     playerPosList = new objPosArrayList();
     playerPosList->insertHead(tempPos);
-
+    FoodPtr = foodPtr;
+    
 }
 
 
@@ -24,18 +21,17 @@ Player::~Player()
 {
     // delete any heap members here
     delete playerPosList;
-
+    delete FoodPtr;
 }
 
 objPosArrayList* Player::getPlayerPos()
 {
-    // return the reference to the playerPos array list
     return playerPosList;
-
+    // return the reference to the playerPos arrray list
 }
 
 void Player::updatePlayerDir()
-{
+{ 
     // PPA3 input processing logic   
 
     char input = mainGameMechsRef->getInput();
@@ -64,7 +60,8 @@ void Player::updatePlayerDir()
 
         default:
             break;
-    }
+    } 
+        
 }
 
 void Player::movePlayer()
@@ -76,47 +73,65 @@ void Player::movePlayer()
     
     // Update player position based on current direction
     
-    switch(myDir)
-    {
-        case UP:
-            currHead.y--;
-            if(currHead.y <= 0) // wraparoud logic
-                currHead.y = mainGameMechsRef->getBoardSizeY() - 2;
-            break;  
-
-        case DOWN:
-            currHead.y++;
-            if(currHead.y >= mainGameMechsRef->getBoardSizeY()) // wraparound logic
-                currHead.y = 1;
-            break;
+    switch(myDir){
 
         case LEFT:
             currHead.x--;
-            if(currHead.x <= 0) // wraparound logic
-                currHead.x = mainGameMechsRef->getBoardSizeX() - 2;
             break;
 
         case RIGHT:
             currHead.x++;
-            if(currHead.x >= mainGameMechsRef->getBoardSizeX()) // wraparound logic
-                currHead.x = 1;
             break;
-        
-        case STOP:
+
+        case DOWN:
+            currHead.y++;
+            break;
+
+        case UP:
+            currHead.y--;
+            break;
+
         default:
             break;
+        }
+        if (currHead.x < 1){
+        currHead.x = mainGameMechsRef->getBoardSizeX() - 2;
+        }
+        else if (currHead.x >= mainGameMechsRef->getBoardSizeX()-1){
+            currHead.x = 1;
+        }
 
+        if (currHead.y >= mainGameMechsRef->getBoardSizeY()-1) {
+            currHead.y = 1;
+        }
+        else if (currHead.y < 1){
+            currHead.y = mainGameMechsRef->getBoardSizeY() - 2;
+        
+        }
+
+    
+    objPos FoodPos;
+    FoodPtr->getFoodPos(FoodPos);
+    if (currHead.isPosEqual(&FoodPos)) {
+        playerPosList->insertHead(currHead);
+        FoodPtr->generateFood(mainGameMechsRef, playerPosList);
+    }
+    else{
+    playerPosList->insertHead(currHead);
+    playerPosList-> removeTail();
     }
 
-
-    // new current head should be inserted to the head of the list.
-    playerPosList->insertHead(currHead);
-
-    // then, remove tail
-    playerPosList->removeTail();
-
+    for(int i = 1; i < playerPosList->getSize(); i++){
+        objPos tempPlayer;
+        playerPosList->getElement(tempPlayer, i);
+        if(currHead.isPosEqual(&tempPlayer)){
+            mainGameMechsRef->setExitTrue();
+            mainGameMechsRef->setLoseFlag();
+        }
+    }
 
 }
 
-
     
+    
+
