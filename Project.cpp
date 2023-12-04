@@ -27,6 +27,7 @@ void RunLogic(void);
 void DrawScreen(void);
 void LoopDelay(void);
 void CleanUp(void);
+void PrintEnd(void);
 
 
 
@@ -125,6 +126,10 @@ void DrawScreen(void)
                     FoodPos.symbol, FoodPos.x, FoodPos.y); // shows the food symbol and x,y coordinate
     MacUILib_printf("\nScore: %d", playerBody->getSize() - 1); // shows the score of the player by finding the size of the list - 1
 
+    if (GMPtr->getLoseFlagStatus()== true) {
+        PrintEnd();
+    }
+
 }
 
 // Introduce a delay between game loops
@@ -144,4 +149,9 @@ void CleanUp(void)
     delete PlayerPtr;
     delete FoodPtr;
 
+}
+
+void PrintEnd(void)
+{
+    MacUILib_printf("YOU LOST, game over\n");
 }
